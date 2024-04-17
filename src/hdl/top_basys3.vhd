@@ -134,13 +134,14 @@ signal w_clk, w_clk2 : std_logic;
 signal w_floor, w_ones, w_tens : std_logic_vector (3 downto 0);
 signal c_Sa, c_Sb, c_Sc, c_Sd, c_Se, c_Sf, c_Sg : std_logic;
 signal w_sel, w_data : std_logic_vector (3 downto 0);
+signal w_reset_fsm, w_reset_clk: std_logic;
 begin
 	-- PORT MAPS ----------------------------------------
 elevator_controller_fsm_inst : elevator_controller_fsm
 port map (
 i_stop => sw(0),
 i_up_down => sw(1),
-i_reset => btnR or btnU,
+i_reset => w_reset_fsm,
 o_floor => w_floor(3 downto 0),
 i_clk => w_clk
 );
@@ -155,7 +156,7 @@ clock_divider_inst: clock_divider
 generic map ( k_DIV => 12500000 ) -- convert MHz to Hz 
           port map (                          
               i_clk   => clk,
-              i_reset => btnL or btnU,
+              i_reset => w_reset_clk,
               o_clk   => w_clk
           );    
 	
@@ -174,13 +175,13 @@ clock_divider_inst2: clock_divider
    generic map ( k_DIV => 100000 ) -- convert MHz to Hz 
              port map (                          
                  i_clk   => clk,
-                 i_reset => btnL or btnU,
+                 i_reset => w_reset_clk,
                  o_clk   => w_clk2
              ); 
 
    
 	-- CONCURRENT STATEMENTS ----------------------------
-w_clk <= led(15);
+led(15)<= w_clk;
 led(14 downto 0) <= (others => '0');
 w_tens <= "0001" when unsigned (w_floor) > 9 or w_floor = "0000" else "0000";
 w_ones <= "0000" when unsigned (w_floor) = 10 else 
@@ -192,18 +193,16 @@ w_ones <= "0000" when unsigned (w_floor) = 10 else
           else "0110" when unsigned (w_floor) = 0
           else w_floor;
                                                   
+w_reset_fsm <= btnU or btnR;
+w_reset_clk <= btnL or btnU;
 
 
 
 
-
-an <= ((3 =>w_sel(3)), (2 => w_sel(2)), others => '1');
-	-- LED 15 gets the FSM slow clock signal. The rest are grounded.
+an(3) <= w_sel(3);
+an(2) <= w_sel(2);
+an(1) <= '1';
+an(0) <= '1';
 	
-
-	-- leave unused switches UNCONNECTED. Ignore any warnings this causes.
-	
-	-- wire up active-low 7SD anodes (an) as required
-	-- Tie any unused anodes to power ('1') to keep them off
 	
 end top_basys3_arch;
